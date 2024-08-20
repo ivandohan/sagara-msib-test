@@ -50,8 +50,25 @@ func (bh *BajuHandler) HandleClient(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
 			switch urlQueryLength {
+			case 2:
+				_, stokOK := r.URL.Query()["stok"]
+				_, kondisiOK := r.URL.Query()["kondisi"]
+
+				if stokOK && kondisiOK {
+					stok, _ := strconv.Atoi(r.FormValue("stok"))
+					kondisi := r.FormValue("kondisi")
+
+					bh.logger.For(ctx).Info("Running service", zap.String("service", "Get Baju By Stok and Kondisi"))
+					serviceResult, err = bh.bajuServices.GetBajuOrderByStok(stok, kondisi)
+					if err != nil {
+						statusCode = http.StatusNotFound
+						break
+					}
+				}
 			case 1:
 				_, bajuIdOK := r.URL.Query()["bajuId"]
+				_, stokOK := r.URL.Query()["stok"]
+
 				if bajuIdOK {
 					bajuId, err := strconv.Atoi(r.FormValue("bajuId"))
 					if err != nil {
@@ -65,9 +82,24 @@ func (bh *BajuHandler) HandleClient(w http.ResponseWriter, r *http.Request) {
 						statusCode = http.StatusNotFound
 						break
 					}
+				} else if stokOK {
+					stok := r.FormValue("stok")
+					if stok == "empty" {
+						bh.logger.For(ctx).Info("Running service", zap.String("service", "Get Baju with Empty Stok"))
+						serviceResult, err = bh.bajuServices.GetBajuOrderByEmptyStok()
+						if err != nil {
+							statusCode = http.StatusNotFound
+							break
+						}
+					}
 				}
 			default:
 				bh.logger.For(ctx).Info("Running service", zap.String("service", "Get All Baju Data"))
+				serviceResult, err = bh.bajuServices.GetAllBaju()
+				if err != nil {
+					statusCode = http.StatusNotFound
+					break
+				}
 			}
 		case http.MethodPost:
 			switch urlQueryLength {
@@ -84,6 +116,43 @@ func (bh *BajuHandler) HandleClient(w http.ResponseWriter, r *http.Request) {
 				err = bh.bajuServices.CreateBaju(bajuRequest)
 				if err != nil {
 					statusCode = http.StatusInternalServerError
+				}
+			}
+		case http.MethodPut:
+			switch urlQueryLength {
+			default:
+				var (
+					bajuRequest entities.Baju
+				)
+				err = json.NewDecoder(r.Body).Decode(&bajuRequest)
+				if err != nil {
+					statusCode = http.StatusBadRequest
+				}
+
+				bh.logger.For(ctx).Info("Running service", zap.String("service", "Delete Baju by Id"))
+				err = bh.bajuServices.UpdateBaju(bajuRequest)
+				if err != nil {
+					statusCode = http.StatusInternalServerError
+					break
+				}
+			}
+		case http.MethodDelete:
+			switch urlQueryLength {
+			case 1:
+				_, bajuIdOK := r.URL.Query()["bajuId"]
+				if bajuIdOK {
+					bajuId, err := strconv.Atoi(r.FormValue("bajuId"))
+					if err != nil {
+						statusCode = http.StatusBadRequest
+						break
+					}
+
+					bh.logger.For(ctx).Info("Running service", zap.String("service", "Delete Baju by Id"))
+					err = bh.bajuServices.DeleteBaju(bajuId)
+					if err != nil {
+						statusCode = http.StatusInternalServerError
+						break
+					}
 				}
 			}
 		}

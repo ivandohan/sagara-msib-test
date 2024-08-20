@@ -15,7 +15,7 @@ func (s *Server) InitiateRouter() (r *mux.Router) {
 
 	sub := r.PathPrefix("/inventory-api").Subrouter()
 
-	sub.HandleFunc("/baju", s.BajuDelivery.HandleClient).Methods("GET", "POST")
+	sub.HandleFunc("/baju", s.BajuDelivery.HandleClient).Methods("GET", "POST", "PUT", "DELETE")
 
 	return r
 }
