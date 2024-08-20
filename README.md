@@ -12,11 +12,6 @@ _Semua model dan utilities pada API ini adalah hal yang telah saya pelajari dan 
 Golang Developer._ 😹😹😹
 ![Logo](assets/images/heheboi.jpg)
 
-
-# Dokumentasi Postman
-Anda dapat melihat dokumentasi Postman untuk API ini pada link berikut :
-[Postman Open API - Clothes Inventory](https://api.postman.com/collections/23412952-9d283698-1d38-45e1-bf30-ce35e4d0eb70?access_key=PMAT-01J5QG90BD532W8YNESZBAZAD0)
-
 ## Fitur Utama
 * Dapat dieksekusi dengan **build image docker**.
 * **CRUD untuk item baju,** menyimpan, menampilkan, memperbarui, dan menghapus data baju dalam inventaris.
