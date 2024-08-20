@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	_ "github.com/lib/pq"
+	"log"
 	"os"
 )
 
@@ -14,10 +15,14 @@ func NewDatabase() (db *sql.DB, err error) {
 	dbHost := os.Getenv("DB_HOST")
 	dbPort := os.Getenv("DB_PORT")
 
-	connStr := fmt.Sprintf("user=%s password=%s dbname=%s sslmode=disable host=%s port=%s",
-		dbUser, dbPassword, dbName, dbHost, dbPort)
+	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+		dbHost, dbPort, dbUser, dbPassword, dbName)
 
-	db, err = sql.Open("postgres", connStr)
+	db, err = sql.Open("postgres", dsn)
+
+	log.Printf("Connecting to DB: host=%s port=%s user=%s dbname=%s",
+		dbHost, dbPort, dbUser, dbName)
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}

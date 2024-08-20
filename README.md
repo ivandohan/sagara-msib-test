@@ -9,10 +9,24 @@ berbagai operasi terkait manajemen inventaris baju, seperti pencarian, penambaha
 lainnya.
 
 ## Fitur Utama
+* Dapat dieksekusi dengan **build image docker**.
 * **CRUD untuk item baju,** menyimpan, menampilkan, memperbarui, dan menghapus data baju dalam inventaris.
 * **Pencarian Baju,** mencari baju berdasarkan nama, brand, warna, dan ukuran.
 * **Manajemen Stok,** menambahkan dan mengurangi stok baju, menampilkan baju yang stoknya habis, serta baju dengan stok kurang dari 5.
 
+## Docker Setup
+* Image yang digunakan dalam proyek adalah *golang:1.22 dan postgres:15
+* Tidak perlu setup tambahan, semua keperluan eksekusi sudah saya paketkan di Dockerfile
+* Eksekusi kode berikut untuk memulai program :
+```text
+    // One shot execution
+    docker-compose up --build
+    
+    // Separated execution
+    docker-compose up db
+    // Wait till this db image worked properly, and then
+    docker-compose up app
+```
 
 ## Clean Architecture
 API ini dibangun dengan mengikuti prinsip **Clean Architecture** yang memisahkan kode menjadi beberapa lapisan untuk menjaga
