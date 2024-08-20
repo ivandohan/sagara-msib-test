@@ -8,6 +8,10 @@ kode yang terstruktur dengan baik, modular, dan mudah untuk dikembangkan lebih l
 berbagai operasi terkait manajemen inventaris baju, seperti pencarian, penambahan, pengurangan stok, dan manajemen data 
 lainnya.
 
+_Semua model dan utilities pada API ini adalah hal yang telah saya pelajari dan matangkan saat magang MSIB 6 sebagai 
+Golang Developer._ 😹😹😹
+![Logo](assets/images/heheboi.jpg)
+
 
 # Dokumentasi Postman
 Anda dapat melihat dokumentasi Postman untuk API ini pada link berikut :
