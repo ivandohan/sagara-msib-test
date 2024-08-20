@@ -10,6 +10,7 @@ import (
 	"sagara-msib-test/internal/entities"
 	"sagara-msib-test/internal/services"
 	jaegerLog "sagara-msib-test/pkg/log"
+	"sagara-msib-test/pkg/response"
 	"strconv"
 )
 
@@ -31,15 +32,21 @@ func NewBajuHandler(bajuServices services.BajuServices, tracer opentracing.Trace
 
 func (bh *BajuHandler) HandleClient(w http.ResponseWriter, r *http.Request) {
 	var (
-		serviceResult interface{}
-		ctx           context.Context
-		err           error
-		statusCode    int
+		serviceResult   interface{}
+		serviceMetadata interface{}
+		serviceError    response.Error
+		ctx             context.Context
+		err             error
+		statusCode      int
+		handlerResponse *response.Response
 	)
 
 	spanCtx, _ := bh.tracer.Extract(opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(r.Header))
 	span := bh.tracer.StartSpan("HandleClient", ext.RPCServerOption(spanCtx))
 	defer span.Finish()
+
+	handlerResponse = &response.Response{}
+	defer handlerResponse.RenderJSON(w, r)
 
 	ctx = opentracing.ContextWithSpan(r.Context(), span)
 	bh.logger.For(ctx).Info("HTTP request received", zap.String("method", r.Method), zap.Stringer("url", r.URL))
@@ -61,7 +68,9 @@ func (bh *BajuHandler) HandleClient(w http.ResponseWriter, r *http.Request) {
 					bh.logger.For(ctx).Info("Running service", zap.String("service", "Get Baju By Stok and Kondisi"))
 					serviceResult, err = bh.bajuServices.GetBajuOrderByStok(stok, kondisi)
 					if err != nil {
-						statusCode = http.StatusNotFound
+						serviceError.Code = http.StatusNotFound
+						serviceError.Status = true
+						serviceError.Msg = "[HANDLER][Get Baju with 2 Params Error]"
 						break
 					}
 				}
@@ -88,7 +97,9 @@ func (bh *BajuHandler) HandleClient(w http.ResponseWriter, r *http.Request) {
 						bh.logger.For(ctx).Info("Running service", zap.String("service", "Get Baju with Empty Stok"))
 						serviceResult, err = bh.bajuServices.GetBajuOrderByEmptyStok()
 						if err != nil {
-							statusCode = http.StatusNotFound
+							serviceError.Code = http.StatusNotFound
+							serviceError.Status = true
+							serviceError.Msg = "[HANDLER][Get Baju with 1 Params Error]"
 							break
 						}
 					}
@@ -97,7 +108,9 @@ func (bh *BajuHandler) HandleClient(w http.ResponseWriter, r *http.Request) {
 				bh.logger.For(ctx).Info("Running service", zap.String("service", "Get All Baju Data"))
 				serviceResult, err = bh.bajuServices.GetAllBaju()
 				if err != nil {
-					statusCode = http.StatusNotFound
+					serviceError.Code = http.StatusNotFound
+					serviceError.Status = true
+					serviceError.Msg = "[HANDLER][Get Baju with 0 Params Error]"
 					break
 				}
 			}
@@ -109,13 +122,19 @@ func (bh *BajuHandler) HandleClient(w http.ResponseWriter, r *http.Request) {
 				)
 				err = json.NewDecoder(r.Body).Decode(&bajuRequest)
 				if err != nil {
-					statusCode = http.StatusBadRequest
+					serviceError.Code = http.StatusBadRequest
+					serviceError.Status = true
+					serviceError.Msg = "[HANDLER][POST for this URL cant received your request.]"
+					break
 				}
 
 				bh.logger.For(ctx).Info("Running service", zap.String("service", "Create New Baju"))
 				err = bh.bajuServices.CreateBaju(bajuRequest)
 				if err != nil {
-					statusCode = http.StatusInternalServerError
+					serviceError.Code = http.StatusInternalServerError
+					serviceError.Status = true
+					serviceError.Msg = "[HANDLER][Server error, maybe crashed. Check it out!]"
+					break
 				}
 			}
 		case http.MethodPut:
@@ -126,13 +145,18 @@ func (bh *BajuHandler) HandleClient(w http.ResponseWriter, r *http.Request) {
 				)
 				err = json.NewDecoder(r.Body).Decode(&bajuRequest)
 				if err != nil {
-					statusCode = http.StatusBadRequest
+					serviceError.Code = http.StatusBadRequest
+					serviceError.Status = true
+					serviceError.Msg = "[HANDLER][PUT for this URL cant received your request.]"
+					break
 				}
 
 				bh.logger.For(ctx).Info("Running service", zap.String("service", "Delete Baju by Id"))
 				err = bh.bajuServices.UpdateBaju(bajuRequest)
 				if err != nil {
-					statusCode = http.StatusInternalServerError
+					serviceError.Code = http.StatusInternalServerError
+					serviceError.Status = true
+					serviceError.Msg = "[HANDLER][Server error, maybe crashed. Check it out!]"
 					break
 				}
 			}
@@ -143,14 +167,18 @@ func (bh *BajuHandler) HandleClient(w http.ResponseWriter, r *http.Request) {
 				if bajuIdOK {
 					bajuId, err := strconv.Atoi(r.FormValue("bajuId"))
 					if err != nil {
-						statusCode = http.StatusBadRequest
+						serviceError.Code = http.StatusBadRequest
+						serviceError.Status = true
+						serviceError.Msg = "[HANDLER][DELETE for this URL cant received your request.]"
 						break
 					}
 
 					bh.logger.For(ctx).Info("Running service", zap.String("service", "Delete Baju by Id"))
 					err = bh.bajuServices.DeleteBaju(bajuId)
 					if err != nil {
-						statusCode = http.StatusInternalServerError
+						serviceError.Code = http.StatusInternalServerError
+						serviceError.Status = true
+						serviceError.Msg = "[HANDLER][Server error, maybe crashed. Check it out!]"
 						break
 					}
 				}
@@ -162,6 +190,7 @@ func (bh *BajuHandler) HandleClient(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), statusCode)
 	}
 
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(serviceResult)
+	handlerResponse.Data = serviceResult
+	handlerResponse.Metadata = serviceMetadata
+	handlerResponse.Error = serviceError
 }
